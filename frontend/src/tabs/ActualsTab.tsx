@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   api, type AppConfig, type FlaggedHost, type PortfolioInfo, type QualityOs, type TriageRow,
 } from "../lib/api";
-import { downloadCsv, fmt, fmtDate } from "../lib/format";
+import { downloadCsv, fmt, fmtDate, hostTypeLabel } from "../lib/format";
 import { usePersisted } from "../lib/hooks";
 import { MultiSelect } from "../components/MultiSelect";
 
@@ -213,7 +213,7 @@ function NeedsReview({ hosts, asOf }: { hosts: FlaggedHost[]; asOf: string }) {
     downloadCsv(
       `needs_review_${asOf}.csv`,
       ["Hostname", "OS", "Host Type", "Portfolio", "Owner", "Owner Status", "Flags"],
-      hosts.map((h) => [h.hostname, h.os, h.host_type, h.portfolio, h.owner, h.owner_status, h.flags.join("; ")]),
+      hosts.map((h) => [h.hostname, h.os, hostTypeLabel(h.host_type), h.portfolio, h.owner, h.owner_status, h.flags.join("; ")]),
     );
   return (
     <section className="card section">
@@ -234,7 +234,7 @@ function NeedsReview({ hosts, asOf }: { hosts: FlaggedHost[]; asOf: string }) {
               <tr key={h.hostname}>
                 <td className="mono">{h.hostname}</td>
                 <td>{h.os}</td>
-                <td className="cap">{h.host_type}</td>
+                <td>{hostTypeLabel(h.host_type)}</td>
                 <td>{h.portfolio}</td>
                 <td>{h.owner}</td>
                 <td className="cap">{h.owner_status}</td>

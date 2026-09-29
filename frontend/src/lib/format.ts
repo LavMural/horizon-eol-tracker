@@ -56,6 +56,18 @@ export function downloadCsv(filename: string, header: string[], rows: (string | 
   URL.revokeObjectURL(url);
 }
 
+/** Evenly spaced "round" axis ticks from 0 that cover max (steps of 1, 2, 2.5 or 5 x 10^n). */
+export function niceTicks(max: number, target = 4): number[] {
+  if (!(max > 0)) return [0, 1];
+  const raw = max / target;
+  const p = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw)!;
+  const top = Math.ceil(max / step) * step;
+  return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+}
+
+export const hostTypeLabel = (t: string) => (t === "lb" ? "Load balancer" : t.charAt(0).toUpperCase() + t.slice(1));
+
 /** Round up to a clean axis maximum (1, 2, 2.5, 5 or 10 x 10^n). */
 export function niceMax(v: number): number {
   if (v <= 0) return 10;

@@ -6,7 +6,7 @@ import {
   api, type AppConfig, type BucketRow, type Decommissions, type SeriesByPortfolio, type SeriesPack,
   type SeriesTotal, type SummaryCard,
 } from "../lib/api";
-import { fmt, fmtAxis, fmtDate, fmtMonth, fmtSigned, niceMax } from "../lib/format";
+import { fmt, fmtAxis, fmtDate, fmtMonth, fmtSigned, niceMax, niceTicks } from "../lib/format";
 import { usePersisted } from "../lib/hooks";
 import { ChartHeader, ChartTooltip, PALETTE, SERIES } from "../components/charts";
 import { MultiSelect } from "../components/MultiSelect";
@@ -165,7 +165,7 @@ function OsCard({ card: c, windowEnd, active, onSelect }: {
         <Kpi label="Current remaining" value={fmt(c.current_remaining)} big />
         <Kpi label={`Baseline (${fmtDate(c.baseline_date).replace(/, \d{4}$/, "")})`} value={fmt(c.baseline)} />
         <Kpi label="Net change (last refresh)" value={fmtSigned(c.net_change)} />
-        <Kpi label="Data-quality flags" value={fmt(c.data_quality_flags)} />
+        <Kpi label="Flagged hosts" value={fmt(c.data_quality_flags)} />
       </div>
       <div className="progress-row">
         <div className="progress" aria-label={`${c.pct_complete}% complete`}>
@@ -345,6 +345,7 @@ function Charts({ os, config, data, selected, allSelected, yMax }: {
     Actual: m <= config.current_month ? pack.actual_remaining[m] : null,
   }));
   const pva = months.map((m) => ({ month: m, Planned: pack.planned_decom[m], Actual: pack.actual_decom[m] }));
+  const pvaTicks = niceTicks(Math.max(0, ...pva.flatMap((d) => [d.Planned ?? 0, d.Actual ?? 0])));
   const scope = allSelected ? "All Portfolios" : selected.join(", ") || "No portfolios selected";
   const drillRows = drill ? drill.hosts.filter((h) => selected.includes(h.portfolio)) : [];
 
@@ -359,7 +360,7 @@ function Charts({ os, config, data, selected, allSelected, yMax }: {
             <YAxis domain={allSelected ? [0, yMax] : [0, "auto"]} tickFormatter={fmtAxis} allowDecimals={false} tick={{ fontSize: 12 }} width={48} />
             <Tooltip content={<ChartTooltip labelFormatter={fmtMonth} />} />
             <Legend />
-            <ReferenceLine y={0} stroke="var(--bad)" strokeDasharray="4 4" label={{ value: "EOL target", position: "insideBottomRight", fontSize: 11, fill: "var(--bad)" }} />
+            <ReferenceLine y={0} stroke="var(--bad)" strokeDasharray="4 4" label={{ value: "EOL target", position: "insideBottomLeft", fontSize: 11, fill: "var(--bad)" }} />
             <Line type="monotone" dataKey="Planned" stroke={SERIES.planned} strokeDasharray="6 4" strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line type="monotone" dataKey="Actual" stroke={SERIES.actual} strokeWidth={2.5} connectNulls dot={{ r: 3 }} isAnimationActive={false} />
           </LineChart>
@@ -373,7 +374,7 @@ function Charts({ os, config, data, selected, allSelected, yMax }: {
           <BarChart data={pva} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
             <XAxis dataKey="month" tickFormatter={fmtMonth} tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={fmtAxis} allowDecimals={false} tick={{ fontSize: 12 }} width={48} />
+            <YAxis domain={[0, pvaTicks[pvaTicks.length - 1]]} ticks={pvaTicks} tickFormatter={fmtAxis} tick={{ fontSize: 12 }} width={48} />
             <Tooltip content={<ChartTooltip labelFormatter={fmtMonth} />} cursor={{ fill: "var(--hover)" }} />
             <Legend />
             <Bar dataKey="Planned" fill={SERIES.planned} radius={[3, 3, 0, 0]} isAnimationActive={false} />

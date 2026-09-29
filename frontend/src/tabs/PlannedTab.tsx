@@ -4,7 +4,7 @@ import {
   api, getActor, setActor, type AppConfig, type ImportResult, type OwnerOption, type PlanAudit, type PlanLine,
   type PortfolioInfo,
 } from "../lib/api";
-import { fmt, fmtAxis, fmtMonth, fmtStamp } from "../lib/format";
+import { fmt, fmtAxis, fmtMonth, fmtStamp, niceTicks } from "../lib/format";
 import { usePersisted } from "../lib/hooks";
 import { ChartTooltip, OTHER_COLOR, PALETTE } from "../components/charts";
 
@@ -192,7 +192,7 @@ export function PlannedTab({ config, onSaved }: { config: AppConfig; onSaved: ()
                     {portfolios.map((p) => <option key={p.code} value={p.code}>{p.code}</option>)}
                   </select>
                 </td>
-                <td><input value={r.application} onChange={(e) => update(r.key, { application: e.target.value })} /></td>
+                <td><input className="app-in" value={r.application} onChange={(e) => update(r.key, { application: e.target.value })} /></td>
                 <td>
                   <input
                     list="owner-options"
@@ -253,7 +253,7 @@ type GroupBy = "portfolio" | "owner" | "application";
 
 function PlanChart({ rows, months }: { rows: PlanLine[]; months: string[] }) {
   const [groupBy, setGroupBy] = usePersisted<GroupBy>("planned.groupBy", "portfolio");
-  const { data, keys } = useMemo(() => {
+  const { data, keys, ticks } = useMemo(() => {
     const totals = new Map<string, number>();
     const per = new Map<string, Record<string, number>>();
     for (const r of rows) {
@@ -272,7 +272,8 @@ function PlanChart({ rows, months }: { rows: PlanLine[]; months: string[] }) {
       if (rest.length) d.Other = rest.reduce((a, k) => a + per.get(k)![m], 0);
       return d;
     });
-    return { data, keys: rest.length ? [...top, "Other"] : top };
+    const peak = Math.max(0, ...months.map((m) => rows.reduce((a, r) => a + (r.months[m] || 0), 0)));
+    return { data, keys: rest.length ? [...top, "Other"] : top, ticks: niceTicks(peak) };
   }, [rows, months, groupBy]);
 
   return (
@@ -293,7 +294,7 @@ function PlanChart({ rows, months }: { rows: PlanLine[]; months: string[] }) {
           <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
             <XAxis dataKey="month" tickFormatter={fmtMonth} tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={fmtAxis} tick={{ fontSize: 12 }} width={48} />
+            <YAxis domain={[0, ticks[ticks.length - 1]]} ticks={ticks} tickFormatter={fmtAxis} tick={{ fontSize: 12 }} width={48} />
             <Tooltip content={<ChartTooltip labelFormatter={fmtMonth} />} cursor={{ fill: "var(--hover)" }} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             {keys.map((k, i) => (

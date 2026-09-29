@@ -46,7 +46,8 @@ def portfolios(db: Session = Depends(get_db)):
     return [{"code": p.code, "full_name": p.full_name, "origin": p.origin,
              "mapped_owners": mapped[p.code],
              "remaining": {os_name: counts[p.code][os_name] for os_name in config.TRACKED_OS}}
-            for p in db.query(Portfolio).order_by(Portfolio.code).all()]
+            for p in sorted(db.query(Portfolio).all(),
+                            key=lambda p: (p.code == config.UNKNOWN, p.code.lower()))]
 
 
 @router.get("/owner-map")
